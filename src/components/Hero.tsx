@@ -6,14 +6,37 @@ import type { TripDTO } from "@/lib/types";
 import { formatCve, formatDayLabel, formatEuro } from "@/lib/format";
 import { WeatherCard } from "./WeatherCard";
 
+// Photos libres de droits (Wikimedia Commons, hôte autorisé dans next.config).
+const commons = (file: string) =>
+  `https://commons.wikimedia.org/wiki/Special:Redirect/file/${encodeURIComponent(file)}?width=1600`;
+
 const LANDSCAPES = [
-  { src: "/hero/praia.webp", title: "Praia, Santiago" },
-  { src: "/hero/buracona.webp", title: "Buracona, Sal" },
-  { src: "/hero/pedra-lume.webp", title: "Pedra de Lume, Sal" },
-  { src: "/hero/viana.webp", title: "Désert de Viana, Boa Vista" },
-  { src: "/hero/fogo.webp", title: "Pico do Fogo" },
-  { src: "/hero/serra-malagueta.webp", title: "Serra Malagueta, Santiago" },
+  // Sal
+  { src: commons("Cape Verde Sal Buracona 2011.jpg"), title: "Buracona, Sal", island: "Sal" },
+  { src: commons("Cape Verde Sal Pedra de Lume salt cable car arrival.jpg"), title: "Pedra de Lume, Sal", island: "Sal" },
+  { src: commons("Sal Sta Maria beach hotel.jpg"), title: "Santa Maria, Sal", island: "Sal" },
+  // Boa Vista
+  { src: commons("Boa Vista Beach Cliff.jpg"), title: "Falaises, Boa Vista", island: "Boa Vista" },
+  { src: commons("Deserto de Viana.jpg"), title: "Désert de Viana, Boa Vista", island: "Boa Vista" },
+  { src: commons("Praia de Santa Mónica.JPG"), title: "Praia de Santa Mónica, Boa Vista", island: "Boa Vista" },
+  // Santiago (Praia)
+  { src: commons("Cape Verde Santiago Fort Real de S Filipe.jpg"), title: "Cidade Velha, Santiago", island: "Santiago" },
+  { src: commons("Tarrafal-Baia Verde (4).jpg"), title: "Tarrafal, Santiago", island: "Santiago" },
+  { src: commons("Serra Malagueta CV.jpg"), title: "Serra Malagueta, Santiago", island: "Santiago" },
+  // Fogo
+  { src: commons("Pico de Fogo & summit of 1995 erruption.jpg"), title: "Pico do Fogo", island: "Fogo" },
+  { src: commons("Cape Verde Pico do Fogo b.jpg"), title: "Pico do Fogo, Fogo", island: "Fogo" },
+  { src: commons("Fogo, Cape Verde Islands.jpg"), title: "Île de Fogo", island: "Fogo" },
 ];
+
+function shuffled(length: number): number[] {
+  const order = Array.from({ length }, (_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return order;
+}
 
 const SLIDESHOW_INTERVAL_MS = 12_000;
 
@@ -26,20 +49,29 @@ export function Hero({
   estimatedBudget: number;
   spentTotal: number;
 }) {
-  // Démarre sur une photo qui dépend du jour, comme le site d'origine.
-  const [index, setIndex] = useState(() => new Date().getDate() % LANDSCAPES.length);
+  // Ordre déterministe pour le rendu serveur, puis mélangé après hydratation
+  // afin d'obtenir un tirage aléatoire à chaque visite (sans décalage SSR).
+  const [order, setOrder] = useState<number[]>(() =>
+    Array.from({ length: LANDSCAPES.length }, (_, i) => i),
+  );
+  const [pos, setPos] = useState(0);
   const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    setOrder(shuffled(LANDSCAPES.length));
+    setPos(0);
+  }, []);
 
   useEffect(() => {
     if (paused) return;
     const timer = setInterval(
-      () => setIndex((current) => (current + 1) % LANDSCAPES.length),
+      () => setPos((current) => (current + 1) % LANDSCAPES.length),
       SLIDESHOW_INTERVAL_MS,
     );
     return () => clearInterval(timer);
   }, [paused]);
 
-  const landscape = LANDSCAPES[index];
+  const landscape = LANDSCAPES[order[pos]];
 
   return (
     <section
@@ -54,7 +86,7 @@ export function Hero({
           fill
           sizes="(min-width: 1152px) 1152px, 100vw"
           className="hero-photo-enter object-cover opacity-70"
-          priority={index === new Date().getDate() % LANDSCAPES.length}
+          priority={pos === 0}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-ocean-950/60 via-ocean-950/30 to-ocean-950/85" />
       </div>
@@ -123,16 +155,16 @@ export function Hero({
           </span>
           <div className="flex items-center gap-2">
             <div className="flex gap-1.5" role="tablist" aria-label="Choisir un paysage">
-              {LANDSCAPES.map((item, i) => (
+              {order.map((landscapeIndex, i) => (
                 <button
-                  key={item.src}
+                  key={landscapeIndex}
                   type="button"
                   role="tab"
-                  aria-selected={i === index}
-                  aria-label={item.title}
-                  onClick={() => setIndex(i)}
+                  aria-selected={i === pos}
+                  aria-label={LANDSCAPES[landscapeIndex].title}
+                  onClick={() => setPos(i)}
                   className={`h-2.5 w-2.5 rounded-full transition ${
-                    i === index ? "bg-star-400" : "bg-white/35 hover:bg-white/60"
+                    i === pos ? "bg-star-400" : "bg-white/35 hover:bg-white/60"
                   }`}
                   style={{ minWidth: "10px" }}
                 />

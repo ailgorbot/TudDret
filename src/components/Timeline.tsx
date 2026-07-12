@@ -8,7 +8,15 @@ import { todayIso } from "@/lib/format";
 import { DayCard } from "./DayCard";
 import { ActivityDialog } from "./ActivityDialog";
 import { DayDialog } from "./DayDialog";
-import { PlaneIcon, FerryIcon, HouseIcon, CarIcon, PlusIcon, GripIcon } from "./icons";
+import {
+  PlaneIcon,
+  FerryIcon,
+  HouseIcon,
+  CarIcon,
+  PlusIcon,
+  GripIcon,
+  DownloadIcon,
+} from "./icons";
 
 type DateFilter = "today" | "tomorrow" | "after-tomorrow" | "all";
 type TypeFilter = "all" | Extract<ActivityType, "flight" | "ferry" | "lodging" | "car">;
@@ -207,6 +215,21 @@ export function Timeline({ trip, days }: { trip: TripDTO; days: DayDTO[] }) {
             />
           ))}
         </ol>
+      )}
+
+      {days.length > 0 && (
+        <div className="flex flex-col items-center gap-1.5 border-t border-sand-200 pt-6">
+          <a
+            href="/api/export"
+            className="flex min-h-12 items-center gap-2.5 rounded-full bg-palm-700 px-6 font-semibold text-white shadow-card transition hover:brightness-95 active:scale-[0.98]"
+          >
+            <DownloadIcon className="h-5 w-5" />
+            Exporter le calendrier (Excel)
+          </a>
+          <p className="text-sm text-ocean-900/50">
+            Itinéraire complet, regroupé par île, aux couleurs du voyage.
+          </p>
+        </div>
       )}
 
       <ActivityDialog

@@ -6,6 +6,8 @@ budget (€ / CVE), dépenses du groupe, météo des îles et actualités du pay
 Refonte de l'ancien site statique (Grist + localStorage + backups JSON manuels)
 en une application **Next.js App Router + PostgreSQL** avec persistance réelle.
 
+**Production :** https://tuddret.169.58.6.47.sslip.io
+
 *Feito com morabeza.*
 
 ## Stack

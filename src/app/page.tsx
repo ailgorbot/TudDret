@@ -109,9 +109,9 @@ export default async function Home() {
           <Image
             src="/brand/cabo-verde-logo.png"
             alt="The Islands of Cabo Verde — From the Heart"
-            width={132}
-            height={48}
-            className="h-10 w-auto sm:h-12"
+            width={198}
+            height={72}
+            className="h-15 w-auto sm:h-18"
             priority
           />
         </a>

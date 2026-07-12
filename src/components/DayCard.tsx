@@ -5,7 +5,7 @@ import type { ActivityDTO, DayDTO } from "@/lib/types";
 import { deleteDay } from "@/lib/actions";
 import { formatDayLabel } from "@/lib/format";
 import { ActivityRow } from "./ActivityRow";
-import { ChevronIcon, PlusIcon, TrashIcon } from "./icons";
+import { ChevronIcon, GripIcon, PlusIcon, TrashIcon } from "./icons";
 
 const ISLAND_COLORS: Record<string, string> = {
   Sal: "bg-star-100 text-star-600",
@@ -20,12 +20,26 @@ export function DayCard({
   defaultOpen,
   onAddActivity,
   onEditActivity,
+  reorderable = false,
+  isDragging = false,
+  isDropTarget = false,
+  onDragStartCard,
+  onDragEnterCard,
+  onDropCard,
+  onDragEndCard,
 }: {
   day: DayDTO;
   dayNumber: number;
   defaultOpen: boolean;
   onAddActivity: () => void;
   onEditActivity: (activity: ActivityDTO) => void;
+  reorderable?: boolean;
+  isDragging?: boolean;
+  isDropTarget?: boolean;
+  onDragStartCard?: () => void;
+  onDragEnterCard?: () => void;
+  onDropCard?: () => void;
+  onDragEndCard?: () => void;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -37,7 +51,33 @@ export function DayCard({
     : null;
 
   return (
-    <li className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-card">
+    <li
+      draggable={reorderable}
+      onDragStart={
+        reorderable
+          ? (event) => {
+              event.dataTransfer.effectAllowed = "move";
+              onDragStartCard?.();
+            }
+          : undefined
+      }
+      onDragEnter={reorderable ? () => onDragEnterCard?.() : undefined}
+      onDragOver={reorderable ? (event) => event.preventDefault() : undefined}
+      onDrop={
+        reorderable
+          ? (event) => {
+              event.preventDefault();
+              onDropCard?.();
+            }
+          : undefined
+      }
+      onDragEnd={reorderable ? () => onDragEndCard?.() : undefined}
+      className={`flex flex-col overflow-hidden rounded-2xl bg-white shadow-card transition ${
+        isDragging ? "opacity-40" : ""
+      } ${
+        isDropTarget ? "ring-2 ring-ocean-500 ring-offset-2" : ""
+      } ${reorderable ? "cursor-grab active:cursor-grabbing" : ""}`}
+    >
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
@@ -45,6 +85,9 @@ export function DayCard({
         className="flex min-h-14 w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-sand-50"
       >
         <div className="flex items-center gap-3">
+          {reorderable && (
+            <GripIcon className="h-5 w-5 shrink-0 text-ocean-900/25" />
+          )}
           <span
             aria-hidden="true"
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-ocean-700 font-display text-lg font-bold text-white"

@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import type { ActivityType } from "@/db/schema";
 import type { ActivityDTO, DayDTO, TripDTO } from "@/lib/types";
+import { reorderDays } from "@/lib/actions";
 import { todayIso } from "@/lib/format";
 import { DayCard } from "./DayCard";
 import { ActivityDialog } from "./ActivityDialog";
 import { DayDialog } from "./DayDialog";
-import { PlaneIcon, FerryIcon, HouseIcon, CarIcon, PlusIcon } from "./icons";
+import { PlaneIcon, FerryIcon, HouseIcon, CarIcon, PlusIcon, GripIcon } from "./icons";
 
 type DateFilter = "today" | "tomorrow" | "after-tomorrow" | "all";
 type TypeFilter = "all" | Extract<ActivityType, "flight" | "ferry" | "lodging" | "car">;
@@ -38,6 +39,31 @@ export function Timeline({ trip, days }: { trip: TripDTO; days: DayDTO[] }) {
     mode: "closed",
   });
   const [dayDialogOpen, setDayDialogOpen] = useState(false);
+  const [draggingId, setDraggingId] = useState<number | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<number | null>(null);
+  const [, startReorder] = useTransition();
+
+  // Le réordonnancement n'a de sens que sur la liste complète, dans l'ordre
+  // calendaire (sans filtre de date ni de type).
+  const reorderable = dateFilter === "all" && typeFilter === "all";
+
+  function endDrag() {
+    setDraggingId(null);
+    setDropTargetId(null);
+  }
+
+  function handleDrop(targetId: number) {
+    const draggedId = draggingId;
+    endDrag();
+    if (draggedId == null || draggedId === targetId) return;
+    startReorder(async () => {
+      const formData = new FormData();
+      formData.set("tripId", String(trip.id));
+      formData.set("draggedId", String(draggedId));
+      formData.set("targetId", String(targetId));
+      await reorderDays(formData);
+    });
+  }
 
   const visibleDays = useMemo(() => {
     let result = days;
@@ -140,6 +166,14 @@ export function Timeline({ trip, days }: { trip: TripDTO; days: DayDTO[] }) {
         </div>
       </div>
 
+      {reorderable && visibleDays.length > 1 && (
+        <p className="flex items-center gap-1.5 text-sm text-ocean-900/50">
+          <GripIcon className="h-4 w-4 shrink-0" />
+          Glissez-déposez une journée pour la replacer : les journées entre les
+          deux se décalent d&apos;un cran, activités comprises.
+        </p>
+      )}
+
       {visibleDays.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-sand-300 bg-white px-6 py-12 text-center text-ocean-900/60">
           {dateFilter !== "all" ? (
@@ -163,6 +197,13 @@ export function Timeline({ trip, days }: { trip: TripDTO; days: DayDTO[] }) {
               onEditActivity={(activity) =>
                 setActivityDialog({ mode: "edit", activity })
               }
+              reorderable={reorderable}
+              isDragging={draggingId === day.id}
+              isDropTarget={dropTargetId === day.id && draggingId !== day.id}
+              onDragStartCard={() => setDraggingId(day.id)}
+              onDragEnterCard={() => setDropTargetId(day.id)}
+              onDropCard={() => handleDrop(day.id)}
+              onDragEndCard={endDrag}
             />
           ))}
         </ol>

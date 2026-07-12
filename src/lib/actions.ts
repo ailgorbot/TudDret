@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq, sql } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   activities,
@@ -123,6 +123,65 @@ export async function deleteDay(formData: FormData): Promise<ActionResult> {
   } catch (error) {
     console.error("deleteDay:", error);
     return fail("Impossible de supprimer la journée.");
+  }
+}
+
+/**
+ * Réordonne les journées par glisser-déposer. Les dates sont des ancres fixes :
+ * on déplace la journée glissée à la position de la cible et toutes les
+ * journées intermédiaires se décalent d'un cran (rotation), chaque journée
+ * emportant ses activités intactes. Concrètement, on redistribue la séquence
+ * de dates entre les journées réordonnées.
+ */
+export async function reorderDays(formData: FormData): Promise<ActionResult> {
+  try {
+    const tripId = Number(requireText(formData, "tripId"));
+    const draggedId = Number(requireText(formData, "draggedId"));
+    const targetId = Number(requireText(formData, "targetId"));
+    if (draggedId === targetId) return { ok: true };
+
+    await db.transaction(async (tx) => {
+      const ordered = await tx
+        .select({ id: days.id, date: days.date })
+        .from(days)
+        .where(eq(days.tripId, tripId))
+        .orderBy(asc(days.date));
+
+      const fromIndex = ordered.findIndex((d) => d.id === draggedId);
+      const toIndex = ordered.findIndex((d) => d.id === targetId);
+      if (fromIndex === -1 || toIndex === -1) {
+        throw new Error("Journée introuvable pour le réordonnancement.");
+      }
+
+      // Séquence de dates dans l'ordre calendaire : ce sont les ancres fixes.
+      const dates = ordered.map((d) => d.date);
+
+      // Déplace la journée glissée à la position cible ; le reste se décale.
+      const reordered = [...ordered];
+      const [moved] = reordered.splice(fromIndex, 1);
+      reordered.splice(toIndex, 0, moved);
+
+      // Passe 1 : parque toutes les dates loin dans le futur pour ne pas
+      // heurter l'index unique (trip_id, date) pendant la réaffectation.
+      await tx
+        .update(days)
+        .set({ date: sql`(${days.date} + interval '1000 years')::date` })
+        .where(eq(days.tripId, tripId));
+
+      // Passe 2 : réaffecte à chaque journée sa nouvelle date d'ancrage.
+      for (let i = 0; i < reordered.length; i++) {
+        await tx
+          .update(days)
+          .set({ date: dates[i], updatedAt: sql`now()` })
+          .where(eq(days.id, reordered[i].id));
+      }
+    });
+
+    revalidatePath("/");
+    return { ok: true };
+  } catch (error) {
+    console.error("reorderDays:", error);
+    return fail("Impossible de réordonner les journées.");
   }
 }
 

@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@theme {
+  /* Palette Cap-Vert : océan (drapeau), sable, terracotta, jaune étoile */
+  --color-ocean-950: #061a3f;
+  --color-ocean-900: #0a2a63;
+  --color-ocean-800: #032f7a;
+  --color-ocean-700: #003893;
+  --color-ocean-600: #1550ad;
+  --color-ocean-500: #2f6bc4;
+  --color-ocean-100: #dbe6f7;
+  --color-ocean-50: #eef3fb;
+
+  --color-sand-50: #faf6ee;
+  --color-sand-100: #f4ecdc;
+  --color-sand-200: #e9dcc2;
+  --color-sand-300: #d9c69e;
+  --color-sand-700: #8a6f45;
+
+  --color-coral-700: #a83a22;
+  --color-coral-600: #c74a2e;
+  --color-coral-500: #d95d39;
+  --color-coral-100: #f9e0d7;
+
+  --color-star-600: #d99a06;
+  --color-star-500: #f0b429;
+  --color-star-400: #f7c948;
+  --color-star-100: #fdf0d3;
+
+  --color-palm-700: #1f6f50;
+  --color-palm-100: #d9efe4;
+
+  --font-display: var(--font-fraunces), Georgia, serif;
+  --font-sans: var(--font-dm-sans), system-ui, sans-serif;
+
+  --shadow-card: 0 1px 2px rgb(6 26 63 / 0.06), 0 8px 24px -12px rgb(6 26 63 / 0.18);
+  --shadow-float: 0 2px 6px rgb(6 26 63 / 0.08), 0 20px 45px -20px rgb(6 26 63 / 0.35);
+}
+
+body {
+  background-color: var(--color-sand-50);
+  color: var(--color-ocean-950);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background-color: var(--color-star-400);
+  color: var(--color-ocean-950);
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-star-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Ruban drapeau : bande océan + étoiles, clin d'œil au site d'origine */
+.flag-ribbon {
+  height: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--color-ocean-700) 0 55%,
+    var(--color-star-400) 55% 62%,
+    var(--color-ocean-700) 62% 70%,
+    var(--color-coral-500) 70% 77%,
+    var(--color-ocean-700) 77% 100%
+  );
+}
+
+@keyframes hero-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.hero-photo-enter {
+  animation: hero-fade 1.2s ease both;
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.sheet-enter {
+  animation: sheet-up 0.25s ease both;
+}
+
+/* Défilement horizontal doux pour les filtres sur mobile */
+.scroll-fade {
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.scroll-fade::-webkit-scrollbar {
+  display: none;
+}
